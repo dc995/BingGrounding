@@ -1,0 +1,7 @@
+# Dependencies for the Bing grounding smoke test
+# Install: python -m pip install -r requirements.txt
+
+azure-identity>=1.17.1,<2.0
+azure-ai-projects==2.0.0b2
+azure-ai-agents==1.2.0b5
+python-dotenv>=1.0.1,<2.0
