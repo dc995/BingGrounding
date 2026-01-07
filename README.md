@@ -21,6 +21,78 @@ The smoke test runs two scenarios:
 - Source repository (Azure SDK for Python):
 	https://github.com/Azure/azure-sdk-for-python
 
+## How Bing Grounding is linked to the model (agent setup)
+
+In Azure AI Foundry Agents, “linking Bing Grounding to the model” means:
+
+1) Your Foundry project has a **Connection** that represents *Grounding with Bing Search* (metadata type `bing_grounding`).
+2) When you create an agent, you attach the **Bing grounding tool** that points at that connection.
+
+### 1) Ensure the Foundry Bing grounding Connection exists
+
+This repo includes a helper to create/update the required connection(s):
+
+```powershell
+python .\create_bing_grounding_connection.py
+```
+
+The helper creates/updates both an account-level and project-level connection and ensures `isSharedToAll=true`.
+
+### 2) Configure your connection reference (env vars)
+
+Set ONE of these (recommended is name):
+
+- `BING_GROUNDING_CONNECTION_NAME` (example: `binggrounding`)
+- `BING_GROUNDING_CONNECTION_ID` (the project-scoped ARM connection id)
+
+Also set:
+
+- `PROJECT_ENDPOINT`
+- `MODEL_DEPLOYMENT_NAME`
+
+### 3) Attach Bing grounding when creating the agent (Python)
+
+At runtime, the “link” is the tool definition passed to `create_agent(...)`.
+
+Example pattern (mirrors what this repo does):
+
+```python
+import os
+
+from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
+from azure.ai.agents import AgentsClient
+from azure.ai.agents.models import BingGroundingTool
+
+endpoint = os.environ["PROJECT_ENDPOINT"]
+credential = DefaultAzureCredential()
+
+project_client = AIProjectClient(endpoint=endpoint, credential=credential)
+agents_client = AgentsClient(endpoint=endpoint, credential=credential)
+
+# Resolve the Foundry connection id from the connection name
+conn_name = os.environ["BING_GROUNDING_CONNECTION_NAME"]
+conn_id = project_client.connections.get(conn_name).id
+
+# Create a Bing grounding tool bound to that connection
+bing = BingGroundingTool(connection_id=conn_id)
+
+# Create an agent using your model deployment + the Bing grounding tool
+agent = agents_client.create_agent(
+	model=os.environ["MODEL_DEPLOYMENT_NAME"],
+	name="my-agent",
+	instructions="Use Bing grounding for current info and include citations.",
+	tools=bing.definitions,
+)
+```
+
+Once the agent is created with `tools=...`, runs against that agent can call Bing grounding and return citations (URLs).
+
+### Common pitfalls
+
+- If the grounded run returns no citations, check VPN / private-only networking restrictions.
+- If you see “connection id was not found”, the connection often exists but is not the correct `bing_grounding` schema in Foundry.
+
 ## Comparison: this sample vs the official SDK sample
 
 - Scope
