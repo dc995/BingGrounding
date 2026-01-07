@@ -129,6 +129,15 @@ You need:
 - Access to a **Bing Grounding** resource (`Microsoft.Bing/accounts`, kind `Bing.Grounding`)
 - Network: Bing grounding does **not** work from VPN / private-only network isolation
 
+Azure service enablement (may be required in some subscriptions):
+
+- If you're creating the Grounding with Bing Search resource via code-first tooling, you might need to register the Azure resource provider first:
+
+```powershell
+az provider register --namespace Microsoft.Bing
+az provider show --namespace Microsoft.Bing --query registrationState -o tsv
+```
+
 Azure permissions (typical):
 
 - You can authenticate with `az login`.
